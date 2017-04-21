@@ -1,4 +1,5 @@
 import numpy as np
+import networkx as nx
 
 
 def read_file(path): # Splits at blank space
@@ -53,9 +54,18 @@ def create_graph():
     for movie, actor_names in movies_dict.items():
         create_edges(actor_names, actors)
 
+    G = nx.Graph()
+    G.add_nodes_from(actors)
+
 #################################### START ####################################
 
-create_graph()
+actors = create_graph()
+
+degree_centrality = [(name, len(a.edges)) for name, a in actors.items()]
+
+# TODO: Closeness centrality
+
+# TODO: Betweeness Centrality
 
 
 
