@@ -42,7 +42,7 @@ def create_graph():
         actor = line[2].replace('"', '')
         movie = line[1].replace('"', '')
 
-        if actor == "" or movie == "":
+        if actor == "" or actor == "s a" or movie == "":
             continue
 
         actor_names.append(actor)
@@ -94,6 +94,23 @@ def create_closeness(G):
     return nodes_avg_l, betweeness_centrality
 
 
+def create_kevin_bacon(G):
+    nodes = G.nodes()
+    nodes.remove('Kevin Bacon')
+
+    kevin_bacon = []
+
+    for n in nodes:
+        try:
+            path = nx.shortest_path(G, n, 'Kevin Bacon')
+            del path[0]
+            kevin_bacon.append((n, len(path)))
+        except:
+            continue
+
+    return kevin_bacon
+
+
 #################################### START ####################################
 
 actors = create_graph() # Dict where key = name, value = obj
@@ -115,3 +132,53 @@ degree_centrality = [(name, len(a.edges)) for name, a in actors.items()]
 
 closeness_centrality, betweeness_centrality = create_closeness(G)
 
+clusters = nx.clustering(G)
+
+
+print("n_nodes = " + str(n_nodes))
+print("n_edges = " + str(n_edges))
+print("density = " + str(density))
+print("number of components = " + str(n_components))
+
+top_degree = sorted(degree_centrality, key=lambda x: x[1], reverse=True)[:5]
+print("\ntop {:d} with degree centrality = {:s}\n".format(len(top_degree), str(top_degree)))
+
+top_closeness = sorted(closeness_centrality, key=lambda x: x[1])[:5]
+print("top {:d} with closeness centrality = {:s}\n".format(len(top_closeness), str(top_closeness)))
+
+top_between = sorted(betweeness_centrality.items(), key=lambda x: x[1], reverse=True)[:5]
+print("top {:d} with between centrality = {:s}\n".format(len(top_between), str(top_between)))
+
+# print(clusters)
+top_clusters = sorted(clusters.items(), key=lambda x: x[1], reverse=True)[:5]
+print("top {:d} cluster nodes = {:s}\n".format(len(top_clusters), str(top_clusters)))
+
+
+kevin_bacon = create_kevin_bacon(G)
+bottom_kevin = sorted(kevin_bacon, key=lambda x: x[1], reverse=False)[:5]
+top_kevin = sorted(kevin_bacon, key=lambda x: x[1], reverse=True)[:5]
+avg_kevin_bacon = sum(a[1] for a in kevin_bacon) / len(kevin_bacon)
+print("The nodes closes to Kevin bacon = {:s}\n".format(str(bottom_kevin)))
+print("The nodes furthest away to Kevin bacon = {:s}\n".format(str(top_kevin)))
+print("The average degree of seperation to Kevin Bacon is = {:f}\n".format(avg_kevin_bacon))
+
+for node, value in top_degree:
+    nx.set_node_attributes(G, 'Top Degree Centrality', {node: value})
+
+for node, value in top_closeness:
+    nx.set_node_attributes(G, 'Top Closeness Centrality', {node: value})
+
+for node, value in top_between:
+    nx.set_node_attributes(G, 'Top Betweeness Centrality', {node: value})
+
+for node, value in top_clusters:
+    nx.set_node_attributes(G, 'Top Clusters', {node: value})
+
+for node, value in bottom_kevin:
+    nx.set_node_attributes(G, 'Closest to Kevin Bacon', {node: value})
+
+for node, value in top_kevin:
+    nx.set_node_attributes(G, 'Furthest away from Kevin Bacon', {node: value})
+
+
+nx.write_gexf(G, 'graph.gexf')
