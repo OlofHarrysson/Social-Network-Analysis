@@ -1,5 +1,8 @@
 import numpy as np
 import networkx as nx
+import sys
+import matplotlib.pyplot as plt
+from collections import defaultdict
 
 
 def read_file(path): # Splits at blank space
@@ -30,43 +33,85 @@ def create_edges(actor_names, actors):
 
 def create_graph():
     casts = read_file('casts.csv')
+    casts = casts[:300] # Shorten the data due to time issues
 
     movies_dict = dict()
-    actors_temp = []
+    actor_names = []
     for line in casts:
         line = line.split(';')
         actor = line[2].replace('"', '')
         movie = line[1].replace('"', '')
-        actors_temp.append(actor)
 
+        if actor == "" or movie == "":
+            continue
+
+        actor_names.append(actor)
         try:
             movies_dict[movie].append(actor)
         except KeyError:
             movies_dict[movie] = [actor]
 
 
-    actors_temp = set(actors_temp)
+    actor_names = set(actor_names)
 
     actors = dict()
-    for actor in actors_temp:
-        actors[actor] = Actor(actor)
+    for name in actor_names:
+        actors[name] = Actor(name)
 
     for movie, actor_names in movies_dict.items():
         create_edges(actor_names, actors)
 
-    G = nx.Graph()
-    G.add_nodes_from(actors)
+    return actors
+
+def create_closeness(G):
+    nodes = G.nodes()
+    n_nodes = len(nodes)
+    betweeness_centrality = defaultdict(int)
+
+    nodes_avg_l = []
+    for n1 in nodes:
+        avg_l = 0
+        n_unconnected = 1 # Always unconnected to itself
+
+        for n2 in nodes:
+            if n1 != n2:
+                try:
+                    path = nx.shortest_path(G, n1, n2)
+                    del path[0]
+                    avg_l += len(path)
+
+                    for p in path:
+                        betweeness_centrality[p] += 1
+                except:
+                    n_unconnected += 1
+
+        if n_nodes - n_unconnected == 0:
+            continue # Node is unconnected
+        else:
+            nodes_avg_l.append((n1, avg_l / (n_nodes - n_unconnected)))
+
+
+    return nodes_avg_l, betweeness_centrality
+
 
 #################################### START ####################################
 
-actors = create_graph()
+actors = create_graph() # Dict where key = name, value = obj
+n_nodes = len(actors)
+n_edges = 0
+
+
+G = nx.Graph() # Graph where node = name, edge = name
+for node_name, a in actors.items():
+    n_edges += len(a.edges)
+    for edge_name, edge in a.edges.items():
+        G.add_edge(node_name, edge_name)
+
+density = n_edges / (n_nodes * (n_nodes - 1))
+n_components = nx.number_connected_components(G)
+
 
 degree_centrality = [(name, len(a.edges)) for name, a in actors.items()]
 
-# TODO: Closeness centrality
+closeness_centrality, betweeness_centrality = create_closeness(G)
 
-# TODO: Betweeness Centrality
-
-
-
-# print(movies_dict)
