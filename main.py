@@ -34,6 +34,8 @@ def create_edges(actor_names, actors):
 def create_graph():
     casts = read_file('casts.csv')
     casts = casts[:300] # Shorten the data due to time issues
+    # casts = casts[:2000] # Runs in about 2 minutes
+    # casts = casts[:6000] # Runs in about 15 minutes
 
     movies_dict = dict()
     actor_names = []
@@ -140,6 +142,7 @@ print("n_edges = " + str(n_edges))
 print("density = " + str(density))
 print("number of components = " + str(n_components))
 
+
 top_degree = sorted(degree_centrality, key=lambda x: x[1], reverse=True)[:5]
 print("\ntop {:d} with degree centrality = {:s}\n".format(len(top_degree), str(top_degree)))
 
@@ -149,7 +152,6 @@ print("top {:d} with closeness centrality = {:s}\n".format(len(top_closeness), s
 top_between = sorted(betweeness_centrality.items(), key=lambda x: x[1], reverse=True)[:5]
 print("top {:d} with between centrality = {:s}\n".format(len(top_between), str(top_between)))
 
-# print(clusters)
 top_clusters = sorted(clusters.items(), key=lambda x: x[1], reverse=True)[:5]
 print("top {:d} cluster nodes = {:s}\n".format(len(top_clusters), str(top_clusters)))
 
@@ -180,5 +182,27 @@ for node, value in bottom_kevin:
 for node, value in top_kevin:
     nx.set_node_attributes(G, 'Furthest away from Kevin Bacon', {node: value})
 
+
+nodes = G.nodes()
+max_edges = top_degree[0][1]
+max_size = 110
+size_values = []
+
+for n in nodes:
+    n_edges = nx.edges(G, nbunch=n)
+    rel_edge = len(n_edges) / max_edges
+    if rel_edge > 0.5:
+        size_values.append(rel_edge * rel_edge * max_size)
+    else:
+        size_values.append(20)
+
+pos = nx.spring_layout(G)
+nx.draw_networkx_nodes(G, pos, node_color=range(len(nodes)),node_size=30,cmap=plt.cm.Vega20b)
+nx.draw_networkx_edges(G, pos, width=0.5)
+plt.show()
+
+nx.draw_networkx_nodes(G, pos, node_color=range(len(nodes)),node_size=size_values,cmap=plt.cm.Vega20b)
+nx.draw_networkx_edges(G, pos, width=0.5)
+plt.show()
 
 nx.write_gexf(G, 'graph.gexf')
